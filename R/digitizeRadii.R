@@ -19,7 +19,7 @@
 #' @param col.scaleBar See details in \code{\link{RFBCoptions}}.
 #' @param lwd.scaleBar See details in \code{\link{RFBCoptions}}.
 #' @param scalingFactor See details in \code{\link{RFBCoptions}}.
-#' @param showTransect See details in \code{\link{RFBCoptions}}.
+#' @param makeTransect See details in \code{\link{RFBCoptions}}.
 #' @param snap2Transect See details in \code{\link{RFBCoptions}}.
 #' @param col.transect See details in \code{\link{RFBCoptions}}.
 #' @param lwd.transect See details in \code{\link{RFBCoptions}}.
@@ -69,7 +69,7 @@ digitizeRadii <- function(img,id,reading,suffix,
                           description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                           windowSize,deviceType,closeWindow,
                           scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
-                          scalingFactor,showTransect,snap2Transect,
+                          scalingFactor,makeTransect,snap2Transect,
                           col.transect,lwd.transect,
                           pch.sel,col.sel,cex.sel,
                           pch.del,col.del,
@@ -104,12 +104,12 @@ digitizeRadii <- function(img,id,reading,suffix,
   }
   if (missing(col.scaleBar)) col.scaleBar <- iGetopt("col.scaleBar")
   if (missing(lwd.scaleBar)) lwd.scaleBar <- iGetopt("lwd.scaleBar")
-  if (missing(showTransect)) showTransect<- iGetopt("showTransect")
+  if (missing(makeTransect)) makeTransect<- iGetopt("makeTransect")
   if (missing(snap2Transect)) snap2Transect<- iGetopt("snap2Transect")
-  if (snap2Transect & !showTransect) {
-    cat("\n!! NOTE that points will be 'snapped' to a transect that is not shown\n",
-         "!!      because 'showTtransect=FALSE' and 'snap2Transect=TRUE'.\n\n",
-        sep="")
+  if (snap2Transect & !makeTransect) {
+    snap2Transect <- makeTransect
+    cat("\n!! NOTE that 'snap2Transect' change to 'TRUE'",
+        "because 'makeTransect=FALSE'.\n\n")
   }
   if (missing(col.transect)) col.transect <- iGetopt("col.transect")
   if (missing(lwd.transect)) lwd.transect <- iGetopt("lwd.transect")
@@ -166,7 +166,7 @@ digitizeRadii <- function(img,id,reading,suffix,
                     description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                     windowSize,deviceType,closeWindow,
                     scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
-                    scalingFactor,showTransect,snap2Transect,
+                    scalingFactor,makeTransect,snap2Transect,
                     col.transect,lwd.transect,
                     pch.sel,col.sel,cex.sel,
                     pch.del,col.del,
@@ -179,13 +179,13 @@ digitizeRadii <- function(img,id,reading,suffix,
                            description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                            windowSize,deviceType,
                            scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
-                           scalingFactor,showTransect,snap2Transect,
+                           scalingFactor,makeTransect,snap2Transect,
                            col.transect,lwd.transect,
                            pch.sel,col.sel,cex.sel,
                            pch.del,col.del,
                            showInfo,pos.info,cex.info,col.info)
+    if (closeWindow) grDevices::dev.off()
   }
-  if (closeWindow) grDevices::dev.off()
   invisible(dat)
 }
 
@@ -205,7 +205,7 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
                             description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                             windowSize,deviceType,
                             scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
-                            scalingFactor,showTransect,snap2Transect,
+                            scalingFactor,makeTransect,snap2Transect,
                             col.transect,lwd.transect,
                             pch.sel,col.sel,cex.sel,
                             pch.del,col.del,
@@ -215,16 +215,17 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
   abort <- restart <- FALSE
   
   ## Setup a message ===========================================================
-  msg2 <- "   'f'=finished, 'd'=delete, 'q'=abort, 'z'=restart"
+  msg2 <- "  'f'=finished, 'd'=delete, 'q'=abort, 'z'=restart"
 
   ## Loads image given in img ==================================================
   windowInfo <- iGetImage(img,id,windowSize,deviceType,
                           showInfo,pos.info,cex.info,col.info)
-  DONE("Loaded the ",img," image.\n")
+  DONE("Loaded ",img,".\n")
   
   ## Allows user to select a scaling bar to get a scaling factor ===============
   if (scaleBar) { ## scaleBar is on the plot
-    NOTE("Select the endpoints of the scale-bar.")
+    RULE("Select endpoints of scale-bar.")
+    RULE(msg2,line="-")
     sfSource <- "scaleBar"
     sbInfo <- iScalingFactorFromScaleBar(msg2,scaleBarLength,windowInfo$pixW2H,
                                          col.scaleBar=col.scaleBar,
@@ -235,21 +236,24 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
     if (is.list(sbInfo)) { # returned a list b/c not abort/restarted
       sbPts <- sbInfo$sbPts
       scalingFactor <- sbInfo$scalingFactor
-      DONE("Found scaling factor from the selected scale-bar.\n")
+      DONE("Found scaling factor from selected scale-bar.\n")
     } else { # no list returned b/c abort/restarted
       if (sbInfo=="ABORT") abort <- TRUE
       else if (sbInfo=="RESTART") restart <- TRUE
     }
   } else { ## No scale bar on the plot ... using the scaling factor
-    DONE("Using the scaling factor provided in 'scalingFactor'.\n")
+    DONE("Using scaling factor provided in 'scalingFactor'.\n")
     sbPts <- NULL
     scaleBarLength <- NULL
     sfSource <- "Provided"
   }
   
   ## User selects a transect on the image ======================================
-  if (!abort & !restart) {
-    NOTE("Select the FOCUS (center) and MARGIN (edge) of the structure.")
+  if (!makeTransect) {
+    slpTransect <- intTransect <- slpPerpTransect <- trans.pts <- NULL
+  } else if (!abort & !restart) {
+    RULE("Select FOCUS (center) and MARGIN (edge) of the structure.")
+    RULE(msg2,line="-")
     trans.pts <- iSelectPt(2,"Select FOCUS and MARGIN:",msg2,
                            pch.sel=pch.sel,col.sel=col.sel,cex.sel=cex.sel,
                            pch.del=pch.del,col.del=col.del,
@@ -261,7 +265,7 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
       intTransect <- trans.pts$y[1]-slpTransect*trans.pts$x[1]
       slpPerpTransect <- -1/slpTransect
       #### Show the transect if asked to
-      if (showTransect) {
+      if (makeTransect) {
         graphics::lines(y~x,data=trans.pts,lwd=lwd.transect,col=col.transect)
         DONE("Transect selected and shown on image.\n")
       } else {
@@ -275,9 +279,11 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
   
   ## User selects annuli on the image ==========================================
   if (!abort & !restart) {
-    NOTE("Select points that are annuli.")
-    pts <- iSelectPt(NULL,"Select ANNULI:",msg2,
-                     pch.sel=pch.sel,col.sel=col.sel,cex.sel=cex.sel,
+    RULE(ifelse(makeTransect,"Select points that are annuli.",
+                "Select FOCUS, then ANNULI, and then MARGIN."))
+    RULE(msg2,line="-")
+    pts <- iSelectPt(NULL,ifelse(makeTransect,"Select ANNULI:","Select POINTS"),
+                     msg2,pch.sel=pch.sel,col.sel=col.sel,cex.sel=cex.sel,
                      pch.del=pch.del,col.del=col.del,
                      snap2Transect=snap2Transect,trans.pts=trans.pts,
                      slpTransect=slpTransect,intTransect=intTransect,
@@ -308,15 +314,15 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
   ## Finish up =================================================================
   if (abort) {
     cat("\n\n")
-    DONE("Processing was ABORTED by the user! No file was written for ",img,".\n")
+    DONE("Processing was ABORTED by user! No file written for ",img,".\n")
   } else if (restart) {
     cat("\n\n")
-    DONE("Processing is being RESTARTED as requested by the user.",
-         " No file was written ",img,".\n")
+    DONE("Processing is being RESTARTED as requested by user.",
+         " No file written for ",img,".\n\n")
     iDigitizeRadii1(img,id,reading,suffix,description,edgeIsAnnulus,popID,
                     IDpattern,IDreplace,windowSize,deviceType,scaleBar,
                     scaleBarLength,col.scaleBar,lwd.scaleBar,scalingFactor,
-                    showTransect,snap2Transect,col.transect,lwd.transect,
+                    makeTransect,snap2Transect,col.transect,lwd.transect,
                     pch.sel,col.sel,cex.sel,pch.del,col.del,showInfo,pos.info,
                     cex.info,col.info)
   } else { ### process results because not abort/restarted
@@ -339,7 +345,7 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
     #### Write the RData file
     saveRDS(dat,file=datanm)
     #### Tell user what happend and invisibly return the R object
-    DONE("Results written to ",datanm,"\n")
+    DONE("Results written to ",datanm,".\n\n")
     invisible(dat)    
   }
 }
@@ -352,20 +358,19 @@ iPts2Rad <- function(pts,edgeIsAnnulus,scalingFactor,pixW2H,id,reading) {
   #### Number of radial measurements is one less than number of points selected
   n <- nrow(pts)-1
   #### Distances in x- and y- directions, corrected for pixel w to h ratio
-  distx <- (pts$x[2:(n+1)]-pts$x[1])*pixW2H
-  disty <- pts$y[2:(n+1)]-pts$y[1]
+  distx <- diff(pts$x)*pixW2H
+  disty <- diff(pts$y)
   #### Distances between points
   distxy <- sqrt(distx^2+disty^2)
-  #### Correct distances for scalingFactor ... and call a radius
-  rad <- distxy*scalingFactor
-  #### Sort radii in increasing order (probably redundant)
-  rad <- rad[order(rad)]
+  #### Correct distances for scalingFactor ... and call an increment
+  inc <- distxy*scalingFactor
+  #### Radii is cumulative sum of increments
+  rad <- cumsum(inc)
   #### create data.frame with radii information
   data.frame(id=as.character(rep(id,n)),
              reading=as.character(rep(ifelse(is.null(reading),NA,reading),n)),
              agecap=ifelse(edgeIsAnnulus,n,n-1),
-             ann=seq_len(n),
-             rad=rad,radcap=max(rad),
+             ann=seq_len(n),rad=rad,radcap=max(rad),
              stringsAsFactors=FALSE)
 }
 

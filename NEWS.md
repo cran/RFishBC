@@ -1,5 +1,23 @@
-# RFishBC 0.1.0.9000 ongoing
-* Removed automatic webpage construction from Travis-CI. Did not work with some of the update vignettes.
+# RFishBC 0.2.0 18-Dec-18
+* Added several items (mostly images) to .Rbuildignore to lower bloat of package.
+* Added .Rbuildignore to remove sticker folder from package directory.
+* Added validation tests (still need to be run manually) from Sullivan data.
+* `combineData()`: Modified. Changed `outFormat=` to `formatOut=`. Added `outType=` to allow user to choose either radial or incremental measurements as output.
+* `digitizeRadii()`: Modified. Changed `showTransect=` to `makeTransect`. Changed so that `snap2Transect` is changed to `FALSE` if it is `TRUE` and `makeTransect=FALSE`. Radii are now computed as the cumulative sum of increments rather than the distance from the selected point back to the structure center. This addresses [#32](https://github.com/droglenc/RFishBC/issues/32) [Thanks to Alan Hanke].
+* `RFBCoptions()`: Modified. Now includes `makeTransect=` used in `digitizeRadii()`. Now includes `connect=`, `col.connect=`, and `lwd.connect=` used in `showDigitizedImage()`. Because of those changes `showTransect=` has been removed.
+* `showDigitizedImage()`: Modified. Changed `showTransect=` to `connect=`, `col.transect=`  to `col.connect=`, and `lwd.transect=` to `lwd.connect=` (this helps address [#32](https://github.com/droglenc/RFishBC/issues/32)) [Thanks to Alan Hanke]. Also removed the points that are plotted at the structure center and, if not an annulus, margin (this addresses [#31](https://github.com/droglenc/RFishBC/issues/31)). Made more robust checks for when the user tries to plot two images from different structures.
+
+# RFishBC 0.1.2 9-Dec-18
+* Added dependency to `cli` package for `DONE()`, `NOTE()`, and `RULE()` (see below).
+* `digitizeRadii()`: Modified. Changed console output directions to use `RULE()` instead of `NOTE()`. Fixed bug that produced error related to closing the last window when working with multiple images.
+* `DONE()`: Modified. Changed to use `cat_line()` from `cli` package (removed my hack).
+* `findScalingFactor()`: Modified. Changed console output directions to use `RULE()` instead of `NOTE()`.
+* `NOTE()`: Modified. Changed to use `cat_line()` from `cli` package (removed my hack).
+* `RULE()`: Added.
+
+# RFishBC 0.1.1 12-Nov-18
+* Released to CRAN.
+* Removed automatic webpage construction from Travis-CI. Did not work with some of the updated vignettes.
 * Put fishBC in the Description field into single quotes as directed by CRAN.
 * `digitizeRadii()`. Modified. Added a note that draws attention when `snap2Transect=TRUE` and `showTransect=FALSE` (i.e., "snapping" to a transect that is not shown). At least partially addresses [#30](https://github.com/droglenc/RFishBC/issues/30).
 

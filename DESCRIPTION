@@ -1,6 +1,6 @@
 Package: RFishBC
-Version: 0.1.1
-Date: 2018-11-12
+Version: 0.2.0
+Date: 2018-12-18
 Title: Back-Calculation of Fish Length
 Authors@R: person("Derek","Ogle",
     email="derek@derekogle.com",
@@ -15,14 +15,14 @@ BugReports: https://github.com/droglenc/RFishBC/issues
 License: GPL-3
 LazyData: true
 Depends: R (>= 3.2.0)
-Imports: graphics, grDevices, clisymbols, crayon, readbitmap, rlang,
-        settings, stringr, tidyr, withr
+Imports: graphics, grDevices, cli, clisymbols, crayon, readbitmap,
+        rlang, settings, stringr, tidyr, withr
 Suggests: FSA, covr, pkgdown, testthat
 Encoding: UTF-8
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 NeedsCompilation: no
-Packaged: 2018-11-12 14:06:13 UTC; dogle
+Packaged: 2018-12-18 14:26:03 UTC; dogle
 Author: Derek Ogle [aut, cre] (<https://orcid.org/0000-0002-0370-9299>)
 Maintainer: Derek Ogle <derek@derekogle.com>
 Repository: CRAN
-Date/Publication: 2018-11-18 18:30:17 UTC
+Date/Publication: 2018-12-18 17:50:03 UTC
