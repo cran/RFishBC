@@ -31,8 +31,9 @@ test_that("digitizeRadii() results without scale-bar",{
   expect_type(dat1,"list")
   expect_equal(names(dat1),c("image","datanm","description","edgeIsAnnulus",
                              "snap2Transect","scalingFactor","sfSource","sbPts",
-                             "sbLength","slpTransect","intTransect","slpPerpTransect",
-                             "windowSize","pixW2H","pts","radii"))
+                             "sbLength","sbUnits","slpTransect","intTransect",
+                             "slpPerpTransect","windowSize","pixW2H","pts","radii",
+                             "note"))
   expect_type(dat1$image,"character")
   expect_type(dat1$datanm,"character")
   expect_null(dat1$description)
@@ -47,6 +48,7 @@ test_that("digitizeRadii() results without scale-bar",{
   expect_equal(dat1$sfSource,"Provided")
   expect_null(dat1$sbPts)
   expect_null(dat1$sbLength)
+  expect_null(dat1$sbUnits)
   expect_type(dat1$slpTransect,"double")
   expect_equal(length(dat1$slpTransect),1)
   expect_type(dat1$intTransect,"double")
@@ -72,8 +74,9 @@ test_that("digitizeRadii() results with scale-bar",{
   expect_type(dat2,"list")
   expect_equal(names(dat2),c("image","datanm","description","edgeIsAnnulus",
                             "snap2Transect","scalingFactor","sfSource","sbPts",
-                            "sbLength","slpTransect","intTransect","slpPerpTransect",
-                            "windowSize","pixW2H","pts","radii"))
+                            "sbLength","sbUnits","slpTransect","intTransect",
+                            "slpPerpTransect","windowSize","pixW2H","pts","radii",
+                            "note"))
   expect_type(dat2$image,"character")
   expect_type(dat2$datanm,"character")
   expect_type(dat2$description,"character")
@@ -92,6 +95,8 @@ test_that("digitizeRadii() results with scale-bar",{
   expect_equal(nrow(dat2$sbPts),2)
   expect_type(dat2$sbLength,"double")
   expect_equal(length(dat2$sbLength),1)
+  expect_type(dat2$sbUnits,"character")
+  expect_equal(length(dat2$sbUnits),1)
   expect_type(dat2$slpTransect,"double")
   expect_equal(length(dat2$slpTransect),1)
   expect_type(dat2$intTransect,"double")
@@ -487,4 +492,84 @@ test_that("Miscellaneous internals output",{
   expect_true(grepl(msg,tmp))
   tmp <- capture.output(RFishBC:::RULE(msg))
   expect_true(grepl(msg,tmp))
+
+  tmp <- iGetImage("Scale_1.jpg",windowSize=10,
+                   deviceType="default",id="1",showInfo=TRUE,
+                   pos.info="topleft",cex.info=1,col.info="yellow")
+  grDevices::dev.off()
+  expect_is(tmp,"list")
+  expect_type(tmp$windowSize,"double")
+  expect_equal(length(tmp$windowSize),2)
+  expect_equal(tmp$windowSize[1],10)
+  expect_type(tmp$pixW2H,"double")
+  expect_equal(length(tmp$pixW2H),1)
+  
+  expect_true(isRData("Scale_1_DHO.rds"))
+  expect_false(isRData("Scale_1.jpg"))
+  
+  ## check iOrderPts ... randomize point and see if they get ordered properly
+  tmp <- dat1$pts
+  tmp2 <- tmp[c(1,sample(2:6),7),]
+  rownames(tmp2) <- 1:7
+  tmp2 <- RFishBC:::iOrderPts(tmp2,edgeIsAnnulus=FALSE)
+  expect_equal(tmp,tmp2)
+  
+  tmp <- dat2$pts
+  tmp2 <- tmp[c(1,sample(2:14)),]
+  rownames(tmp2) <- 1:14
+  tmp2 <- RFishBC:::iOrderPts(tmp2,edgeIsAnnulus=TRUE)
+  expect_equal(tmp,tmp2)
+  
+  tmp <- tmp2 <- dat1$pts[c(1,nrow(dat1$pts)),]
+  rownames(tmp2) <- 1:2
+  tmp2 <- RFishBC:::iOrderPts(tmp2,edgeIsAnnulus=FALSE)
+  expect_equal(tmp,tmp2)
+  
+  tmp <- tmp2 <- dat2$pts[c(1,nrow(dat2$pts)),]
+  rownames(tmp)[2] <- 1
+  rownames(tmp2) <- 1:2
+  tmp2 <- RFishBC:::iOrderPts(tmp2,edgeIsAnnulus=TRUE)
+  expect_equal(tmp,tmp2)
+  
+  ## Check convert points to radii
+  tmp <- data.frame(x=0,y=1:5)
+  tmp2 <- RFishBC:::iPts2Rad(tmp,edgeIsAnnulus=TRUE,scalingFactor=1,
+                             pixW2H=1,id=1,reading="DHO")
+  expect_true(all(tmp2$agecap==4))
+  expect_true(all(tmp2$radcap==4))
+  expect_equal(tmp2$rad,1:4)
+  tmp2 <- RFishBC:::iPts2Rad(tmp,edgeIsAnnulus=FALSE,scalingFactor=1,
+                             pixW2H=1,id=1,reading="DHO")
+  expect_true(all(tmp2$agecap==3))
+  expect_true(all(tmp2$radcap==4))
+  expect_equal(tmp2$rad,1:4)
+  
+  tmp <- data.frame(x=1:5,y=1:5)
+  tmp2 <- RFishBC:::iPts2Rad(tmp,edgeIsAnnulus=TRUE,scalingFactor=1,
+                             pixW2H=1,id=1,reading="DHO")
+  expect_true(all(tmp2$agecap==4))
+  expect_true(all(tmp2$radcap==4*sqrt(2)))
+  expect_equal(tmp2$rad,(1:4)*sqrt(2))
+  
+  tmp <- data.frame(x=(1:5)/2,y=1:5)
+  tmp2 <- RFishBC:::iPts2Rad(tmp,edgeIsAnnulus=TRUE,scalingFactor=1,
+                             pixW2H=2,id=1,reading="DHO")
+  expect_true(all(tmp2$agecap==4))
+  expect_true(all(tmp2$radcap==4*sqrt(2)))
+  expect_equal(tmp2$rad,(1:4)*sqrt(2))
+
+  tmp <- data.frame(x=1:5,y=(1:5)/2)
+  tmp2 <- RFishBC:::iPts2Rad(tmp,edgeIsAnnulus=TRUE,scalingFactor=1,
+                             pixW2H=1/2,id=1,reading="DHO")
+  expect_true(all(tmp2$agecap==4))
+  expect_true(all(tmp2$radcap==4*sqrt(2)/2))
+  expect_equal(tmp2$rad,(1:4)*sqrt(2)/2)
+  
+  ## Label positions
+  tmp <- RFishBC:::iFindLabelPos(dat1)
+  expect_is(tmp,"integer")
+  expect_equal(tmp,4)
+  tmp <- RFishBC:::iFindLabelPos(dat2)
+  expect_is(tmp,"integer")
+  expect_equal(tmp,1)
 })  

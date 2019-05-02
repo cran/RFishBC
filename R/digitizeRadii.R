@@ -16,6 +16,7 @@
 #' @param IDreplace See details in \code{\link{RFBCoptions}}.
 #' @param scaleBar See details in \code{\link{RFBCoptions}}.
 #' @param scaleBarLength See details in \code{\link{RFBCoptions}}.
+#' @param scaleBarUnits See details in \code{\link{RFBCoptions}}.
 #' @param col.scaleBar See details in \code{\link{RFBCoptions}}.
 #' @param lwd.scaleBar See details in \code{\link{RFBCoptions}}.
 #' @param scalingFactor See details in \code{\link{RFBCoptions}}.
@@ -32,6 +33,8 @@
 #' @param pos.info See details in \code{\link{RFBCoptions}}.
 #' @param cex.info See details in \code{\link{RFBCoptions}}.
 #' @param col.info See details in \code{\link{RFBCoptions}}.
+#' @param addNote See details in \code{\link{RFBCoptions}}.
+#' @param note A specific note about this reading (e.g., a note that the image was poor, some annulus were suspect, or the image should be re-read.). If missing then the user will be prompted to include a note if \code{addNote=TRUE}.
 #'
 #' @return \code{NULL} if more than one file was given in \code{img} or, if only one file was given, a list that contains the following:
 #' \itemize{
@@ -44,6 +47,7 @@
 #'   \item{\code{sfSource}: }{A character string that identifies whether the scaling factor was \code{"Provided"} through the \code{scalingFactor} argument or derived from a \code{"scaleBar"}.}
 #'   \item{\code{sbPts}: }{A data.frame of \code{x} and \code{y} coordinates for the endpoints of the scale-bar if the scaling factor was derived from a scale-bar.}
 #'   \item{\code{sbLength}: }{A single numeric that is the known (actual) length of the scale-bar if the scaling factor was derived from a scale-bar.}
+#'   \item{\code{sbUnits}: }{A single character that is the units of measurement for the known (actual) length of the scale-bar if the scaling factor was derived from a scale-bar.}
 #'   \item{\code{slpTransect}: }{The slope of the transect.}
 #'   \item{\code{intTransect}: }{The intercept of the transect.}
 #'   \item{\code{slpPerpTransect}: }{The slope of the line perpendicular to the transect.}
@@ -51,6 +55,7 @@
 #'   \item{\code{pixW2H}: }{The ratio of pixel width to height. This is used to correct measurements for when an image is not square.}
 #'   \item{\code{pts}: }{A data.frame that contains the \code{x} and \code{y} coordinates on the image for the selected annuli. These points may have been \dQuote{snapped} to the transect if \code{snap2Transect==TRUE}.}
 #'   \item{\code{radii}: }{A data.frame that contains the unique \code{id}, the \code{reading} code, the age-at-capture in \code{agecap}, the annulus number in \code{ann}, the radial measurements in \code{rad}, and the radial measurement at capture in \code{radcap}.}
+#'   \item{\code{note}: }{A string that contains a note about the reading (e.g., a note that the image was poor, some annulus were suspect, or the image should be re-read.)}
 #' }.
 #' 
 #' @details This function requires interaction from the user. A detailed description of its use is in the vignettes on the \href{http://derekogle.com/RFishBC/index.html}{RFishBC website}.
@@ -68,17 +73,19 @@
 digitizeRadii <- function(img,id,reading,suffix,
                           description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                           windowSize,deviceType,closeWindow,
-                          scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
+                          scaleBar,scaleBarLength,scaleBarUnits,
+                          col.scaleBar,lwd.scaleBar,
                           scalingFactor,makeTransect,snap2Transect,
                           col.transect,lwd.transect,
                           pch.sel,col.sel,cex.sel,
                           pch.del,col.del,
-                          showInfo,pos.info,cex.info,col.info) {
+                          showInfo,pos.info,cex.info,col.info,
+                          addNote,note) {
   ## Process argument defaults =================================================
   if (missing(reading)) reading <- iGetopt("reading")
   if (missing(description)) description <- iGetopt("description")
   if (missing(suffix)) suffix <- iGetopt("suffix")
-  if (is.null(suffix) & !is.null(reading)) suffix <- reading
+  if (is.null(suffix) & !is.null(reading)) suffix <- reading             # nocov
   if (missing(edgeIsAnnulus)) edgeIsAnnulus <- iGetopt("edgeIsAnnulus")
   if (!is.logical(edgeIsAnnulus))
     STOP("'edgeIsAnnulus' must be TRUE or FALSE.")
@@ -87,32 +94,44 @@ digitizeRadii <- function(img,id,reading,suffix,
   if (missing(IDreplace)) IDreplace <- iGetopt("IDreplace")
   if (missing(scaleBar)) scaleBar <- iGetopt("scaleBar")
   if (missing(scaleBarLength)) scaleBarLength <- iGetopt("scaleBarLength")
+  if (missing(scaleBarUnits)) scaleBarUnits <- iGetopt("scaleBarUnits")
   if (missing(scalingFactor)) scalingFactor <- iGetopt("scalingFactor")
   if (scaleBar & is.null(scaleBarLength))
     STOP("Must provide a 'scaleBarLength' when 'scaleBar=TRUE'.")
+  if (scaleBar & is.null(scaleBarUnits))
+    STOP("Must provide a 'scaleBarUnits' when 'scaleBar=TRUE'.")
   if (!is.null(scaleBarLength)) {
     if (!is.numeric(scaleBarLength)) STOP("'scaleBarLength' must be numeric.")
     if (scaleBarLength<=0) STOP("'scaleBarLength' must be positive.")
     if (scalingFactor!=RFBCoptions()$scalingFactor)
       STOP("Can not set both 'scaleBarLength' and 'scalingFactor'.")
   }
+  if (!is.null(scaleBarUnits)) {
+    if (!is.character(scaleBarUnits)) STOP("'scaleBarUnits' must be a character.")
+  }
   if (!scaleBar & !is.null(scaleBarLength)) 
     STOP("Can not use 'scaleBarLength=' with 'scaleBar=FALSE'.")
+  if (!scaleBar & !is.null(scaleBarUnits)) 
+    STOP("Can not use 'scaleBarUnits=' with 'scaleBar=FALSE'.")
   if (!is.null(scalingFactor)) {
     if (!is.numeric(scalingFactor)) STOP("'scalingFactor' must be numeric.")
     if (scalingFactor<=0) STOP("'scalingFactor' must be positive.")
   }
   if (missing(col.scaleBar)) col.scaleBar <- iGetopt("col.scaleBar")
+  if (length(col.scaleBar)>1) STOP("Can use only one color in 'col.scaleBar='.")
   if (missing(lwd.scaleBar)) lwd.scaleBar <- iGetopt("lwd.scaleBar")
+  if (length(lwd.scaleBar)>1) STOP("Can use only one value in 'lwd.scaleBar='.")
   if (missing(makeTransect)) makeTransect<- iGetopt("makeTransect")
   if (missing(snap2Transect)) snap2Transect<- iGetopt("snap2Transect")
   if (snap2Transect & !makeTransect) {
     snap2Transect <- makeTransect
-    cat("\n!! NOTE that 'snap2Transect' change to 'TRUE'",
-        "because 'makeTransect=FALSE'.\n\n")
+    message("\n!! 'snap2Transect' changed to 'FALSE'",
+            " because 'makeTransect=FALSE'.\n\n")
   }
   if (missing(col.transect)) col.transect <- iGetopt("col.transect")
+  if (length(col.transect)>1) STOP("Can use only one color in 'col.transect='.")
   if (missing(lwd.transect)) lwd.transect <- iGetopt("lwd.transect")
+  if (length(lwd.transect)>1) STOP("Can use only one value in 'lwd.transect='.")
   if (missing(pch.sel)) pch.sel <- iGetopt("pch.sel")
   if (missing(col.sel)) col.sel <- iGetopt("col.sel")
   if (missing(cex.sel)) cex.sel <- iGetopt("cex.sel")
@@ -127,6 +146,8 @@ digitizeRadii <- function(img,id,reading,suffix,
   if (missing(pos.info)) pos.info <- iGetopt("pos.info")
   if (missing(cex.info)) cex.info <- iGetopt("cex.info")
   if (missing(col.info)) col.info <- iGetopt("col.info")
+  if (missing(addNote)) addNote <- iGetopt("addNote")
+  if (missing(note)) note <- ""
 
   ## Handle getting the image filename =========================================
   img <- iHndlFilenames(img,filter="images",multi=TRUE)
@@ -150,27 +171,29 @@ digitizeRadii <- function(img,id,reading,suffix,
     } else {
       ## Set ID to the initial guesses at IDs when multiple images given
       id <- initID
-    }                                                             # nocov end
+    }                                                              # nocov end
   } else {
     ## Make sure that img and id have the same length
     if (length(img)!=length(id))
       STOP("Lengths of image file names and IDs must be equal.")
   }  
-  if (missing(id) | is.null(id)) STOP("You must provide a unique ID in 'id'.")
+  if (missing(id) | is.null(id)) STOP("You must provide a unique ID in 'id'.") # nocov
   
   ## ===========================================================================
-  if (length(img)>1) {
+  if (length(img)>1) {                                             # nocov start
     ## More than one image to process
     for (i in seq_along(img)) {
       digitizeRadii(img[i],id=id[i],reading,suffix,
                     description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                     windowSize,deviceType,closeWindow,
-                    scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
+                    scaleBar,scaleBarLength,scaleBarUnits,
+                    col.scaleBar,lwd.scaleBar,
                     scalingFactor,makeTransect,snap2Transect,
                     col.transect,lwd.transect,
                     pch.sel,col.sel,cex.sel,
                     pch.del,col.del,
-                    showInfo,pos.info,cex.info,col.info)
+                    showInfo,pos.info,cex.info,col.info,
+                    addNote,note)
     }
     dat <- NULL
   } else {
@@ -178,16 +201,18 @@ digitizeRadii <- function(img,id,reading,suffix,
     dat <- iDigitizeRadii1(img,id,reading,suffix,
                            description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                            windowSize,deviceType,
-                           scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
+                           scaleBar,scaleBarLength,scaleBarUnits,
+                           col.scaleBar,lwd.scaleBar,
                            scalingFactor,makeTransect,snap2Transect,
                            col.transect,lwd.transect,
                            pch.sel,col.sel,cex.sel,
                            pch.del,col.del,
-                           showInfo,pos.info,cex.info,col.info)
+                           showInfo,pos.info,cex.info,col.info,
+                           addNote,note)
     if (closeWindow) grDevices::dev.off()
   }
   invisible(dat)
-}
+}                                                                  # nocov end
 
 
 
@@ -204,18 +229,20 @@ digitizeRadii <- function(img,id,reading,suffix,
 iDigitizeRadii1 <- function(img,id,reading,suffix,
                             description,edgeIsAnnulus,popID,IDpattern,IDreplace,
                             windowSize,deviceType,
-                            scaleBar,scaleBarLength,col.scaleBar,lwd.scaleBar,
+                            scaleBar,scaleBarLength,scaleBarUnits,
+                            col.scaleBar,lwd.scaleBar,
                             scalingFactor,makeTransect,snap2Transect,
                             col.transect,lwd.transect,
                             pch.sel,col.sel,cex.sel,
                             pch.del,col.del,
-                            showInfo,pos.info,cex.info,col.info) {
+                            showInfo,pos.info,cex.info,col.info,
+                            addNote,note) { # nocov start
 
   ## Setup logicals that allow an abort or a restart ===========================
-  abort <- restart <- FALSE
+  abort <- restart <- killed <- FALSE
   
   ## Setup a message ===========================================================
-  msg2 <- "  'f'=finished, 'd'=delete, 'q'=abort, 'z'=restart"
+  msg2 <- "  'f'=finished, 'd'=delete, 'q'=abort, 'z'=restart, 'k'=kill"
 
   ## Loads image given in img ==================================================
   windowInfo <- iGetImage(img,id,windowSize,deviceType,
@@ -227,7 +254,8 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
     RULE("Select endpoints of scale-bar.")
     RULE(msg2,line="-")
     sfSource <- "scaleBar"
-    sbInfo <- iScalingFactorFromScaleBar(msg2,scaleBarLength,windowInfo$pixW2H,
+    sbInfo <- iScalingFactorFromScaleBar(msg2,scaleBarLength,
+                                         windowInfo$pixW2H,
                                          col.scaleBar=col.scaleBar,
                                          lwd.scaleBar=lwd.scaleBar,
                                          pch.sel=pch.sel,col.sel=col.sel,
@@ -237,9 +265,10 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
       sbPts <- sbInfo$sbPts
       scalingFactor <- sbInfo$scalingFactor
       DONE("Found scaling factor from selected scale-bar.\n")
-    } else { # no list returned b/c abort/restarted
+    } else { # no list returned b/c abort/restarted/killed
       if (sbInfo=="ABORT") abort <- TRUE
       else if (sbInfo=="RESTART") restart <- TRUE
+      else if (sbInfo=="KILLED") killed <- TRUE
     }
   } else { ## No scale bar on the plot ... using the scaling factor
     DONE("Using scaling factor provided in 'scalingFactor'.\n")
@@ -251,7 +280,7 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
   ## User selects a transect on the image ======================================
   if (!makeTransect) {
     slpTransect <- intTransect <- slpPerpTransect <- trans.pts <- NULL
-  } else if (!abort & !restart) {
+  } else if (!abort & !restart & !killed) {
     RULE("Select FOCUS (center) and MARGIN (edge) of the structure.")
     RULE(msg2,line="-")
     trans.pts <- iSelectPt(2,"Select FOCUS and MARGIN:",msg2,
@@ -271,14 +300,15 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
       } else {
         DONE("Transect selected.\n")
       }
-    } else { # no data.frame returned b/c abort/restarted
+    } else { # no data.frame returned b/c abort/restarted/killed
       if (trans.pts=="ABORT") abort <- TRUE
       else if (trans.pts=="RESTART") restart <- TRUE
+      else if (trans.pts=="KILLED") killed <- TRUE
     }
   }
   
   ## User selects annuli on the image ==========================================
-  if (!abort & !restart) {
+  if (!abort & !restart & !killed) {
     RULE(ifelse(makeTransect,"Select points that are annuli.",
                 "Select FOCUS, then ANNULI, and then MARGIN."))
     RULE(msg2,line="-")
@@ -292,55 +322,69 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
       #### Add transect (focus and margin) to the points
       pts <- rbind(trans.pts,pts)
       #### Re-order points by distance from the first point (the focus)
-      pts <- iOrderPts(pts)
+      pts <- iOrderPts(pts,edgeIsAnnulus)
       numAnn <- nrow(pts)-2
       if (edgeIsAnnulus) numAnn <- numAnn+1
       #### Tell the user how many points were selected
       if (numAnn==1) DONE("1 point was selected as an annulus.\n")
       else DONE(numAnn," points were selected as annuli.\n")
-    } else { # data.frame not returned because abort/restarted
+    } else { # data.frame not returned because abort/restarted/killed
       if (pts=="ABORT") abort <- TRUE
       else if (pts=="RESTART") restart <- TRUE
+      else if (pts=="KILLED") killed <- TRUE
     }
   }
   
   ## Converts selected points to radial measurements ===========================
   ##    as long as not aborted or asked to restart =============================
-  if (!abort & !restart) {
+  if (!abort & !restart & !killed) {
     radii <- iPts2Rad(pts,edgeIsAnnulus=edgeIsAnnulus,scalingFactor=scalingFactor,
                       pixW2H=windowInfo$pixW2H,id=id,reading=reading)
   }
 
   ## Finish up =================================================================
-  if (abort) {
+  if (killed) {
+    ## send a message
     cat("\n\n")
-    DONE("Processing was ABORTED by user! No file written for ",img,".\n")
+    DONE2("Entire processing was ABORTED by user! No file was written for ",img,".\n")
+    ## close the image window
+    grDevices::dev.off()
+    ## stop further functioning ... but do it quietly and thus, more elegantly
+    opt <- options(show.error.messages=FALSE)
+    on.exit(options(opt))
+    stop()
+  } else if (abort) {
+    cat("\n\n")
+    DONE2("Processing of image was ABORTED by user! No file written for ",img,".\n")
   } else if (restart) {
     cat("\n\n")
-    DONE("Processing is being RESTARTED as requested by user.",
-         " No file written for ",img,".\n\n")
+    DONE2("Processing is being RESTARTED as requested by user.",
+          " No file written for ",img,".\n\n")
     iDigitizeRadii1(img,id,reading,suffix,description,edgeIsAnnulus,popID,
                     IDpattern,IDreplace,windowSize,deviceType,scaleBar,
-                    scaleBarLength,col.scaleBar,lwd.scaleBar,scalingFactor,
-                    makeTransect,snap2Transect,col.transect,lwd.transect,
-                    pch.sel,col.sel,cex.sel,pch.del,col.del,showInfo,pos.info,
-                    cex.info,col.info)
+                    scaleBarLength,scaleBarUnits,col.scaleBar,lwd.scaleBar,
+                    scalingFactor,makeTransect,snap2Transect,col.transect,
+                    lwd.transect,pch.sel,col.sel,cex.sel,pch.del,col.del,
+                    showInfo,pos.info,cex.info,col.info)
   } else { ### process results because not abort/restarted
     ### Create a master data object and write to RData file in working directory
     #### Name of RData file
     datanm <- paste0(tools::file_path_sans_ext(img),
                      ifelse(!is.null(suffix),"_",""),
                      suffix,".rds")
+    #### Add a note (if asked to do so)
+    if (addNote & note=="") note <- iGetNote(note)
     #### Master data object
     dat <- list(image=img,datanm=datanm,description=description,
                 edgeIsAnnulus=edgeIsAnnulus,snap2Transect=snap2Transect,
                 scalingFactor=scalingFactor,sfSource=sfSource,
-                sbPts=sbPts,sbLength=scaleBarLength,
+                sbPts=sbPts,sbLength=scaleBarLength,sbUnits=scaleBarUnits,
                 slpTransect=slpTransect,intTransect=intTransect,
                 slpPerpTransect=slpPerpTransect,
                 windowSize=windowInfo$windowSize,
                 pixW2H=windowInfo$pixW2H,
-                pts=pts,radii=radii)
+                pts=pts,radii=radii,note=note)
+    #### Make RFishBC class
     class(dat) <- "RFishBC"
     #### Write the RData file
     saveRDS(dat,file=datanm)
@@ -348,7 +392,7 @@ iDigitizeRadii1 <- function(img,id,reading,suffix,
     DONE("Results written to ",datanm,".\n\n")
     invisible(dat)    
   }
-}
+}                                                                  # nocov end
 
 
 ########################################################################
@@ -382,7 +426,7 @@ iPts2Rad <- function(pts,edgeIsAnnulus,scalingFactor,pixW2H,id,reading) {
 ## Perpendicularly "slides" a point to fall on the transect.
 ########################################################################
 iSnap2Transect <- function(pts,trans.pts,
-                           slpTransect,intTransect,slpPerpTransect) {
+                           slpTransect,intTransect,slpPerpTransect) { # nocov start
   if (is.infinite(slpTransect)) {
     ## Transect is perfectly vertical
     ### x-value of point of intercept with transect is same as x on transect
@@ -405,21 +449,21 @@ iSnap2Transect <- function(pts,trans.pts,
   }
   ### Return snapped coordinates
   data.frame(x=intersectsX,y=intersectsY)
-}
+}                                                                 # nocov end
 
 
 
 ########################################################################
 ## Orders a data.frame of x-y coordinates by distance from first point.
 ########################################################################
-iOrderPts <- function(pts) {
+iOrderPts <- function(pts,edgeIsAnnulus) {
   ## find a matrix of distances from the first point (in the first column
   ## returned by dist()), finds the order of those distances, and re-orders
   ## the original points by that order and returns the result
   pts <- pts[order(as.matrix(stats::dist(pts))[,1]),]
   ## change rownames
-  if (nrow(pts)==2) rownames(pts) <- c("center","edge")
-  else rownames(pts) <- c("center",1:(nrow(pts)-2),"edge")
+  rownames(pts) <- c("center",1:(nrow(pts)-1))
+  if (!edgeIsAnnulus) rownames(pts)[nrow(pts)] <- "edge"
   ## Return data.frame
   pts
 }

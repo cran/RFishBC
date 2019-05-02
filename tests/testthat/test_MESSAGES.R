@@ -3,6 +3,16 @@ context("RFishBC MESSAGES")
 source("EXS_growthUtils.R")
 source("EXS_collectRadii.R")
 
+test_that("Internal Function messages",{
+  expect_error(STOP("This is a test error."),"This is a test error")
+  expect_warning(WARN("This is a test warning."),"This is a test warning")
+
+  expect_error(iHndlFilenames("../test-all.R"),"which is NOT")
+  expect_silent(iHndlFilenames("Scale_1_DHO.rds"))
+  expect_equal(iHndlFilenames("Scale_1_DHO.rds"),"Scale_1_DHO.rds")
+})
+
+
 test_that("RFBCoptions() error messages",{
   expect_warning(RFBCoptions(Derek=TRUE),
                  "Ignoring options not defined in manager")
@@ -17,6 +27,8 @@ test_that("RFBCoptions() error messages",{
   expect_error(RFBCoptions(scalingFactor=0),
                "value out of range")
   expect_error(RFBCoptions(scaleBar="Derek"),
+               "TRUE,FALSE")
+  expect_error(RFBCoptions(showScaleBarLength="Derek"),
                "TRUE,FALSE")
   expect_error(RFBCoptions(lwd.scaleBar=0),
                "value out of range")
@@ -58,6 +70,14 @@ test_that("RFBCoptions() error messages",{
                "value out of range")
   expect_error(RFBCoptions(cex.ann=11),
                "value out of range")
+  expect_error(RFBCoptions(offset.ann=-0.1),
+               "value out of range")
+  expect_error(RFBCoptions(offset.ann=11),
+               "value out of range")
+  expect_error(RFBCoptions(cex.scaleBar=0),
+               "value out of range")
+  expect_error(RFBCoptions(cex.scaleBar=11),
+               "value out of range")
 })
 
 test_that("iGetopt() error messages",{
@@ -72,36 +92,63 @@ test_that("digitizeRadii() error messages",{
                edgeIsAnnulus=TRUE),
                "Lengths of image file names and IDs must be equal")
   expect_error(digitizeRadii("testdata/small_ex.jpg",id=1,edgeIsAnnulus=TRUE),
-               "The file MUST be in the current working directory")
+               "which is NOT")
+  
   ## Errors in options arguments  
+  expect_error(digitizeRadii(),
+               "must be TRUE or FALSE")
   expect_error(digitizeRadii(edgeIsAnnulus="derek"),
                "must be TRUE or FALSE")
+  
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE),
                "Must provide a")
-  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarLength=0),
-               "must be positive")
-  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarLength=-1),
-               "must be positive")
-  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,
-                             scaleBarLength="derek"),
-               "must be numeric")
-  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=FALSE,scaleBarLength=1),
-               "Can not use")
-  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarLength=1),
+               "Must provide a")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarUnits="mm",
+                             scaleBarLength=0),"must be positive")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarUnits="mm",
+                             scaleBarLength=-1),"must be positive")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarUnits="mm",
+                             scaleBarLength="derek"),"must be numeric")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarUnits=7,
+                             scaleBarLength=1),"must be a character")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=FALSE,scaleBarUnits="mm",
+                             scaleBarLength=1),"Can not use")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarUnits="mm",
                              scaleBarLength=1,scalingFactor=1.1),
                "Can not set both")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=FALSE,scaleBarUnits="mm"),
+               "Can not use")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarLength=1,
+                             scaleBarUnits="mm",col.scaleBar=1:2),
+               "Can use only one color in")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scaleBar=TRUE,scaleBarLength=1,
+                             scaleBarUnits="mm",lwd.scaleBar=1:2),
+               "Can use only one value in")  
+  
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scalingFactor="derek"),
                "must be numeric")
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scalingFactor=0),
                "must be positive")
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,scalingFactor=-1),
                "must be positive")
+  
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,windowSize="derek"),
                "must be numeric")
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,windowSize=0),
                "must be positive")
   expect_error(digitizeRadii(edgeIsAnnulus=TRUE,windowSize=-1),
                "must be positive")
+  
+  expect_message(try(digitizeRadii(edgeIsAnnulus=TRUE,snap2Transect=TRUE,
+                                   makeTransect=FALSE,col.transect=1:2),
+                     silent=TRUE),
+                 "changed to 'FALSE'")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,col.transect=1:2),
+               "Can use only one color in")
+  expect_error(digitizeRadii(edgeIsAnnulus=TRUE,lwd.transect=1:2),
+               "Can use only one value in")
+  
 })
 
 
@@ -122,7 +169,11 @@ test_that("combineData() messages",{
 test_that("showDigitizedImage() messages",{
   expect_error(showDigitizedImage("small_ex.jpg"),
                "not an RData file")
+  expect_error(showDigitizedImage(c("small_ex.jpg","Scale_1_DHO.rds")),
+               "not an RData file")
   expect_error(showDigitizedImage("notRFishBC.rds"),
+               "does not appear to be from")
+  expect_error(showDigitizedImage(c("notRFishBC.rds","Scale_1_DHO.rds")),
                "does not appear to be from")
   expect_error(showDigitizedImage(c("Scale_1_DHO.rds","Scale_2_DHO.rds")),
                "from different structure images")
@@ -131,6 +182,31 @@ test_that("showDigitizedImage() messages",{
   expect_error(showDigitizedImage("Oto140306_DHO.rds",showAnnuliLabels=FALSE,
                                   annuliLabels=1:3),
                "not needed when")
+  expect_error(showDigitizedImage("Oto140306_DHO.rds",col.scaleBar=c("blue","red")),
+               "Can use only one")
+  expect_error(showDigitizedImage("Oto140306_DHO.rds",lwd.scaleBar=1:2),
+               "Can use only one")
+  expect_error(showDigitizedImage("Oto140306_DHO.rds",pch.show=c(1,"arrows")),
+               "'arrows' cannot be used")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",pch.show=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",col.show=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",cex.show=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",
+                                    pch.show="arrows",col.show=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",
+                                    pch.show="arrows",cex.show=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",
+                                    annuliLabels=1:5,col.ann=1:3),
+                 "was recycled")
+  expect_warning(showDigitizedImage("Oto140306_DHO.rds",
+                                    annuliLabels=1:5,cex.ann=1:3),
+                 "was recycled")
+  grDevices::dev.off()
 })
 
 

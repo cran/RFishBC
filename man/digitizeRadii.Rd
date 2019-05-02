@@ -6,9 +6,10 @@
 \usage{
 digitizeRadii(img, id, reading, suffix, description, edgeIsAnnulus, popID,
   IDpattern, IDreplace, windowSize, deviceType, closeWindow, scaleBar,
-  scaleBarLength, col.scaleBar, lwd.scaleBar, scalingFactor, makeTransect,
-  snap2Transect, col.transect, lwd.transect, pch.sel, col.sel, cex.sel,
-  pch.del, col.del, showInfo, pos.info, cex.info, col.info)
+  scaleBarLength, scaleBarUnits, col.scaleBar, lwd.scaleBar, scalingFactor,
+  makeTransect, snap2Transect, col.transect, lwd.transect, pch.sel,
+  col.sel, cex.sel, pch.del, col.del, showInfo, pos.info, cex.info,
+  col.info, addNote, note)
 }
 \arguments{
 \item{img}{A vector of strings that indicates the image (must be PNG, JPG, BMP, or TIFF) to be loaded and plotted. By default the user will be provided a dialog box from which to choose the file(s). Alternatively the user can supply the name(s) of the file(s). Either way the file(s) must be in the current working directory.}
@@ -38,6 +39,8 @@ digitizeRadii(img, id, reading, suffix, description, edgeIsAnnulus, popID,
 \item{scaleBar}{See details in \code{\link{RFBCoptions}}.}
 
 \item{scaleBarLength}{See details in \code{\link{RFBCoptions}}.}
+
+\item{scaleBarUnits}{See details in \code{\link{RFBCoptions}}.}
 
 \item{col.scaleBar}{See details in \code{\link{RFBCoptions}}.}
 
@@ -70,6 +73,10 @@ digitizeRadii(img, id, reading, suffix, description, edgeIsAnnulus, popID,
 \item{cex.info}{See details in \code{\link{RFBCoptions}}.}
 
 \item{col.info}{See details in \code{\link{RFBCoptions}}.}
+
+\item{addNote}{See details in \code{\link{RFBCoptions}}.}
+
+\item{note}{A specific note about this reading (e.g., a note that the image was poor, some annulus were suspect, or the image should be re-read.). If missing then the user will be prompted to include a note if \code{addNote=TRUE}.}
 }
 \value{
 \code{NULL} if more than one file was given in \code{img} or, if only one file was given, a list that contains the following:
@@ -83,6 +90,7 @@ digitizeRadii(img, id, reading, suffix, description, edgeIsAnnulus, popID,
   \item{\code{sfSource}: }{A character string that identifies whether the scaling factor was \code{"Provided"} through the \code{scalingFactor} argument or derived from a \code{"scaleBar"}.}
   \item{\code{sbPts}: }{A data.frame of \code{x} and \code{y} coordinates for the endpoints of the scale-bar if the scaling factor was derived from a scale-bar.}
   \item{\code{sbLength}: }{A single numeric that is the known (actual) length of the scale-bar if the scaling factor was derived from a scale-bar.}
+  \item{\code{sbUnits}: }{A single character that is the units of measurement for the known (actual) length of the scale-bar if the scaling factor was derived from a scale-bar.}
   \item{\code{slpTransect}: }{The slope of the transect.}
   \item{\code{intTransect}: }{The intercept of the transect.}
   \item{\code{slpPerpTransect}: }{The slope of the line perpendicular to the transect.}
@@ -90,6 +98,7 @@ digitizeRadii(img, id, reading, suffix, description, edgeIsAnnulus, popID,
   \item{\code{pixW2H}: }{The ratio of pixel width to height. This is used to correct measurements for when an image is not square.}
   \item{\code{pts}: }{A data.frame that contains the \code{x} and \code{y} coordinates on the image for the selected annuli. These points may have been \dQuote{snapped} to the transect if \code{snap2Transect==TRUE}.}
   \item{\code{radii}: }{A data.frame that contains the unique \code{id}, the \code{reading} code, the age-at-capture in \code{agecap}, the annulus number in \code{ann}, the radial measurements in \code{rad}, and the radial measurement at capture in \code{radcap}.}
+  \item{\code{note}: }{A string that contains a note about the reading (e.g., a note that the image was poor, some annulus were suspect, or the image should be re-read.)}
 }.
 }
 \description{
