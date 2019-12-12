@@ -1,3 +1,7 @@
+# RFishBC 0.2.3 11-December-19
+* Now using ROxygen2 7.0.1.
+* `digitizeRadii()`: Modified. Fixed bug with `addNote=` when restarting an image. Thanks to Ben Neely for pointing out the issue.
+
 # RFishBC 0.2.2 2-May-19
 * Added URL for fishBC software per CRAN request.
 * Added a directive to ignore Rplots* files when building the package (i.e., to .rbuildignore). This reduces the size of the tar-ball per CRAN request.
