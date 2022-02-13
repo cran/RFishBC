@@ -1,3 +1,13 @@
+# RFishBC 0.2.4 12-Feb-2022
+* Last version maintained by Derek Ogle. Transferring to fishR Core Team for next version.
+* Removed Travis-CI and appveyor.
+* No longer using coveralls for coverage statistics. Changed to codecov.io.
+* Added GitHub Action for CI/CD (used `usethis::use_github_action_check_standard()`).
+* Added GitHub Action for pkgdown (used `usethis::use_github_action("pkgdown")`).
+* Added GitHub Action for code coverage with codecov.io.
+* Now using ROxygen2 7.1.1.
+* `showDigitizedRadii()`: Modified. Now returns the window size in `windowSize` and the pixel width to height ratio in `pixW2H`. This better allows the user to save the `showDigitizedRadii()` image as an image file in a loop (see examples in aaaMakeDataVignetts.R). Eventually this will be used to address [#43](https://github.com/droglenc/RFishBC/issues/43).
+
 # RFishBC 0.2.3 11-December-19
 * Now using ROxygen2 7.0.1.
 * `digitizeRadii()`: Modified. Fixed bug with `addNote=` when restarting an image. Thanks to Ben Neely for pointing out the issue.

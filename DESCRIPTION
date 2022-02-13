@@ -1,6 +1,6 @@
 Package: RFishBC
-Version: 0.2.3
-Date: 2019-12-11
+Version: 0.2.4
+Date: 2022-2-12
 Title: Back-Calculation of Fish Length
 Authors@R: person("Derek","Ogle",
     email="derek@derekogle.com",
@@ -11,7 +11,7 @@ Description: Helps fisheries scientists collect measurements from calcified
     standard procedures and models. This is intended to replace much of the
     functionality provided by the now out-dated 'fishBC' software
     (<https://fisheries.org/bookstore/all-titles/software/70317/>).
-URL: http://derekogle.com/RFishBC
+URL: https://derekogle.com/RFishBC/
 BugReports: https://github.com/droglenc/RFishBC/issues
 License: GPL-3
 LazyData: true
@@ -20,10 +20,10 @@ Imports: graphics, grDevices, cli, clisymbols, crayon, readbitmap,
         rlang, settings, stringr, tidyr, withr
 Suggests: FSA, covr, pkgdown, testthat
 Encoding: UTF-8
-RoxygenNote: 7.0.1.9000
+RoxygenNote: 7.1.2
 NeedsCompilation: no
-Packaged: 2019-12-11 23:51:31 UTC; dogle
+Packaged: 2022-02-13 05:33:49 UTC; dogle
 Author: Derek Ogle [aut, cre] (<https://orcid.org/0000-0002-0370-9299>)
 Maintainer: Derek Ogle <derek@derekogle.com>
 Repository: CRAN
-Date/Publication: 2019-12-12 05:30:02 UTC
+Date/Publication: 2022-02-13 06:00:06 UTC
